@@ -143,7 +143,7 @@ void disassemble(uint8_t *codebuffer, int pc) {
                         //8XY7
                         //Sets Vx to Vy minus Vx
                         //Vf set to 0 if there's a borrow, 1 if not
-                        printf("%-10s V%01X, V%01x", "SUB", (code[0] & 0XF), code[1] >> 4);
+                        printf("%-10s V%01X, V%01x", "SUBB", (code[0] & 0XF), code[1] >> 4);
                     }
                     break; 
                     case 0xE:
@@ -162,7 +162,7 @@ void disassemble(uint8_t *codebuffer, int pc) {
             {
                 //9XY0
                 //Skips next instruction if Vx doesn't equal Vy
-                printf("%-10s V%01x, v%01x", "SKIP.EQ", (code[0] & 0xF), code[1] >> 4);
+                printf("%-10s V%01x, v%01x", "SKIP.NE", (code[0] & 0xF), code[1] >> 4);
             }
             break;
         case 0x0a:
