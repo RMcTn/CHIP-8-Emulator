@@ -66,7 +66,7 @@ void disassemble(uint8_t *codebuffer, int pc) {
             {
                 //5XY0
                 //Skips next instruction if Vx == Vy
-                printf("%-10s V%01x, V%01x", "SKIP.EQ", (code[0] & 0xF), (code[1] >> 4))))))))));
+                printf("%-10s V%01x, V%01x", "SKIP.EQ", (code[0] & 0xF), (code[1] >> 4));
             }
             break;
         case 0x06:
@@ -85,7 +85,7 @@ void disassemble(uint8_t *codebuffer, int pc) {
             break;
         case 0x08: 
             {
-                switch(code[1] >> 4) {
+                switch(code[1] & 0xF) {
                     case 0:
                     {
                         //8XY0
