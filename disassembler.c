@@ -7,9 +7,11 @@ void disassemble(uint8_t *codebuffer, int pc) {
     uint8_t first_nibble = (code[0] >> 4);
     //code[0] is the first byte
     //code[1] is the second byte
-    //$NUM means address NUM
-    //#$NUM means value at address NUM
+    ///NNN: Address
+    //NN: 8-bit constant
+    //N: 4-bit constant
     //Vx or Vy is a register
+    //I: 16bit register (for memory address)
     printf("%04x %02x %02x ", pc, code[0], code[1]);
     switch(first_nibble) {
         case 0x00: 
@@ -64,7 +66,7 @@ void disassemble(uint8_t *codebuffer, int pc) {
             {
                 //5XY0
                 //Skips next instruction if Vx == Vy
-                printf("%-10s V%01x, V%01x", "SKIP.EQ", (code[0] & 0xF), (code[1] >> 4);
+                printf("%-10s V%01x, V%01x", "SKIP.EQ", (code[0] & 0xF), (code[1] >> 4))))))))));
             }
             break;
         case 0x06:
@@ -220,46 +222,70 @@ void disassemble(uint8_t *codebuffer, int pc) {
                     case 0x07:
                     {
                         //FX07
+                        //Sets Vx to the value of the delay timer
+                        printf("%-10s, V%01x, DELAY", "MOV", code[0] & 0xF);
                     }
                     break;
                     case 0x0A:
                     {
                         //FX0A
+                        //Key press is awaited, then stored in Vx
+                        printf("%-10s, V%01x", "KEY", code[0] & 0xF);
                     }
                     break;
                     case 0x15:
                     {
                         //FX15
+                        //Sets the delay timer to the value of Vx
+                        printf("%-10s, DELAY, V%01x", "MOV", code[0] & 0xF);
                     }
                     break;
                     case 0x18:
                     {
                         //FX18
+                        //Sets the sound timer to the value of Vx
+                        printf("%-10s, SOUND, V%01x", "MOV", code[0] & 0xF);
                     }
                     break;
                     case 0x1E:
                     {
                         //FX1E
+                        //Adds Vx to I
+                        printf("%-10s, I, V%01x", "ADI", code[0] & 0xF);
                     }
                     break;
                     case 0x29:
                     {
                         //FX29
+                        //Sets I to the location of the sprite for the character in Vx
+                        //Characters 0-F are represented by a 4x5 font
+                        printf("%-10s, I, V%01x", "SPRITECHAR", code[0] & 0xF);
                     }
                     break;
                     case 0x33:
                     {
                         //FX33
+                        //Stores the Binary Coded Decimal representation of Vx,
+                        //with the most significant of the three digits at the address in I,
+                        //the middle digit at I plus 1,
+                        //and the least significant digit at I plus 2.
+                        //(Take decimanl of Vx, place hundreds digit in memory at location in I..
+                        //tens digit at location I+1, ones digit at location I+2)
+                        printf("%-10s, (I), V%01x", "MOVBCD", code[0] & 0xF);
                     }
                     break;
                     case 0x55:
                     {
                         //FX55
+                        //Stores V0 to Vx (including Vx) in memory starting at address I
+                        printf("%-10s, (I), V0-V%01x", "MOVM", code[0] & 0xF);
                     }
                     break;
                     case 0x65:
                     {
                         //FX65
+                        //Fills V0 to Vx (including Vx) with values from memory starting at address I
+                        printf("%-10s, V0-V%01x, (I)", "MOVM", code[0] & 0xF);
                     }
                     break;
                 }
