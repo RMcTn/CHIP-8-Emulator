@@ -73,7 +73,7 @@ void disassemble(uint8_t *codebuffer, int pc) {
             {
                 //6XNN
                 //Sets Vx to NN
-                printf("%-10s V%01X, #$%02x", "MVI", (code[0] & 0xF), code[1]);
+                printf("%-10s V%01x, #$%02x", "MVI", (code[0] & 0xF), code[1]);
             }
             break;
         case 0x07:
