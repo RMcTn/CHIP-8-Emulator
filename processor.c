@@ -520,19 +520,9 @@ void uninplementedInstruction(Chip8State* state) {
 
 int main(int argc, char* args[]) {
     Chip8State* state = init();
-    emulate(state);
+    //emulate(state);
+    initDisplay();
 
-    SDL_Window* window = NULL;
-    SDL_Surface* screenSurface = NULL;
-
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        printf("SDL could not initalize! SDL_ERROR: %s\n", SDL_GetError());
-    } else {
-        window = SDL_CreateWindow("CHIP-8 Emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 64, 32, SDL_WINDOW_SHOWN);
-        if (window == NULL) {
-            printf("SDL could not open window! SDL_ERROR: %s\n", SDL_GetError());
-        }
-    }
 }
 
 void incrementPC(Chip8State* state) {
