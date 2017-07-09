@@ -15,106 +15,6 @@ typedef struct Chip8State {
 } Chip8State;
 
 
-uint8_t font4x5[] = {
-//0
-    0b01100000,
-    0b10010000,
-    0b10010000,
-    0b10010000,
-    0b01100000,
-
-//1
-    0b01100000,
-    0b00100000,
-    0b00100000,
-    0b00100000,
-    0b01110000,
-
-//2
-    0b11100000,
-    0b00010000,
-    0b00110000,
-    0b01100000,
-    0b11110000,
-//3
-    0b11100000,
-    0b00010000,
-    0b01100000,
-    0b00010000,
-    0b11100000,
-
-    0b10100000,
-    0b10100000,
-    0b11100000,
-    0b00100000,
-    0b00100000,
-
-    0b11110000,
-    0b10000000,
-    0b11110000,
-    0b00010000,
-    0b11110000,
-
-    0b10000000,
-    0b10000000,
-    0b11110000,
-    0b10010000,
-    0b11110000,
-
-    0b11110000,
-    0b00010000,
-    0b00100000,
-    0b00100000,
-    0b00100000,
-
-    0b11110000,
-    0b10010000,
-    0b11110000,
-    0b10010000,
-    0b11110000,
-
-    0b11110000,
-    0b10010000,
-    0b11110000,
-    0b00010000,
-    0b00010000,
-
-    0b01100000,
-    0b10010000,
-    0b11110000,
-    0b10010000,
-    0b10010000,
-
-    0b10000000,
-    0b10000000,
-    0b11110000,
-    0b10010000,
-    0b11110000,
-
-    0b11110000,
-    0b10000000,
-    0b10000000,
-    0b10000000,
-    0b11110000,
-
-    0b11100000,
-    0b10010000,
-    0b10010000,
-    0b10010000,
-    0b11100000,
-
-    0b11110000,
-    0b10000000,
-    0b11100000,
-    0b10000000,
-    0b11110000,
-
-    0b11110000,
-    0b10000000,
-    0b11100000,
-    0b10000000,
-    0b10000000,
-};
 
 void uninplementedInstruction(Chip8State* state);
 void incrementPC(Chip8State* state);
@@ -248,8 +148,13 @@ void emulate(Chip8State* state) {
                     //ADD Vx Vy
                     uint8_t first_reg = getRegister(opcode[0], false);
                     uint8_t second_reg = getRegister(opcode[1], true);
-                    state->V[first_reg] += state->V[second_reg];
                     //Check if VF needs to be set (carry)
+                    if(state->V[first_reg] + state->V[second_reg] > 255) {
+                        state->V[0xF] = 1;
+                    } else {
+                        state->[0xF] = 0;
+                    }
+                    state->V[first_reg] += state->V[second_reg];
                     incrementPC(state);
                 }
                 break;
@@ -258,8 +163,13 @@ void emulate(Chip8State* state) {
                     //SUB Vx Vy
                     uint8_t first_reg = getRegister(opcode[0], false);
                     uint8_t second_reg = getRegister(opcode[1], true);
-                    state->V[first_reg] -= state->V[second_reg];
                     //Check if VF needs to be set (borrow)
+                    if (state->V[first_reg] > state->[second_reg]) {
+                        state->V[0xF] = 1;
+                    } else {
+                        state->V[0xF] = 0;
+                    }
+                    state->V[first_reg] -= state->V[second_reg];
                     incrementPC(state);
                 }
                 break;
@@ -267,8 +177,9 @@ void emulate(Chip8State* state) {
                 {
                     //ROR Vx
                     uint8_t reg = getRegister(opcode[0], false);
-                    state->V[reg] = state->V[reg] >> 1;
                     //Set VF to LSB BEFORE shift
+                    state->V[0xF] = state->V[reg] & 0x1;
+                    state->V[reg] = state->V[reg] >> 1;
                     incrementPC(state);
                 }
                 break;
@@ -277,8 +188,13 @@ void emulate(Chip8State* state) {
                     //SUBB Vx Vy
                     uint8_t first_reg = getRegister(opcode[0], false);
                     uint8_t second_reg = getRegister(opcode[1], true);
-                    state->V[first_reg] = state->V[second_reg] - state->V[first_reg];
                     //Check if VF needs to be set (borrow)
+                    if (state->V[first_reg] < state->[second_reg]) {
+                        state->V[0xF] = 1;
+                    } else {
+                        state->V[0xF] = 0;
+                    }
+                    state->V[first_reg] = state->V[second_reg] - state->V[first_reg];
                     incrementPC(state);
                 }
                 break;
@@ -286,8 +202,9 @@ void emulate(Chip8State* state) {
                 {
                     //ROL Vx
                     uint8_t reg = getRegister(opcode[0], false);
-                    state->V[reg] = state->V[reg] << 1;
                     //Set VF to MSB BEFORE shift
+                    state->V[0xF] = (state->V[reg] >> 8) & 0x80;
+                    state->V[reg] = state->V[reg] << 1;
                     incrementPC(state);
                 }
                 break;
@@ -521,8 +438,6 @@ void uninplementedInstruction(Chip8State* state) {
 int main(int argc, char* args[]) {
     Chip8State* state = init();
     //emulate(state);
-    initDisplay();
-
 }
 
 void incrementPC(Chip8State* state) {
@@ -542,3 +457,104 @@ uint8_t getRegister(uint8_t byte, bool first_nibble) {
     else
         return byte & 0x0F;
 }
+
+uint8_t font4x5[] = {
+//0
+    0b01100000,
+    0b10010000,
+    0b10010000,
+    0b10010000,
+    0b01100000,
+
+//1
+    0b01100000,
+    0b00100000,
+    0b00100000,
+    0b00100000,
+    0b01110000,
+
+//2
+    0b11100000,
+    0b00010000,
+    0b00110000,
+    0b01100000,
+    0b11110000,
+//3
+    0b11100000,
+    0b00010000,
+    0b01100000,
+    0b00010000,
+    0b11100000,
+
+    0b10100000,
+    0b10100000,
+    0b11100000,
+    0b00100000,
+    0b00100000,
+
+    0b11110000,
+    0b10000000,
+    0b11110000,
+    0b00010000,
+    0b11110000,
+
+    0b10000000,
+    0b10000000,
+    0b11110000,
+    0b10010000,
+    0b11110000,
+
+    0b11110000,
+    0b00010000,
+    0b00100000,
+    0b00100000,
+    0b00100000,
+
+    0b11110000,
+    0b10010000,
+    0b11110000,
+    0b10010000,
+    0b11110000,
+
+    0b11110000,
+    0b10010000,
+    0b11110000,
+    0b00010000,
+    0b00010000,
+
+    0b01100000,
+    0b10010000,
+    0b11110000,
+    0b10010000,
+    0b10010000,
+
+    0b10000000,
+    0b10000000,
+    0b11110000,
+    0b10010000,
+    0b11110000,
+
+    0b11110000,
+    0b10000000,
+    0b10000000,
+    0b10000000,
+    0b11110000,
+
+    0b11100000,
+    0b10010000,
+    0b10010000,
+    0b10010000,
+    0b11100000,
+
+    0b11110000,
+    0b10000000,
+    0b11100000,
+    0b10000000,
+    0b11110000,
+
+    0b11110000,
+    0b10000000,
+    0b11100000,
+    0b10000000,
+    0b10000000,
+};
