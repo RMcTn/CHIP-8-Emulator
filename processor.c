@@ -1,26 +1,112 @@
 #include "processor.h"
-
-typedef struct Chip8State {
-    uint8_t     V[16];      //16 8 bit registers
-    uint16_t    I;          //Memory address register
-    uint16_t    SP;         //Stack pointer     - Starts at 0xEA0
-    uint16_t    PC;         //Program counter   - Starts at 0x200
-    uint8_t     delay;      //Delay timer
-    uint8_t     sound;      //Sound timer
-    uint8_t     *memory;    //4k RAM
-    uint8_t     *screen;    //Display buffer    - Starts at 0xF00 - Display: 64x32
-    uint8_t     key_state[16];
-    bool        waiting_for_key;
-    uint8_t     save_key_state[16];
-} Chip8State;
-
-
+#include "display.h"
+#include "disassembler.c"
 
 void uninplementedInstruction(Chip8State* state);
 void incrementPC(Chip8State* state);
 uint16_t getAddress(uint8_t first_byte, uint8_t second_byte);
 uint8_t getRegister(uint8_t byte, bool first_nibble);
 
+uint8_t font4x5[] = {
+//0
+    0b01100000,
+    0b10010000,
+    0b10010000,
+    0b10010000,
+    0b01100000,
+
+//1
+    0b01100000,
+    0b00100000,
+    0b00100000,
+    0b00100000,
+    0b01110000,
+
+//2
+    0b11100000,
+    0b00010000,
+    0b00110000,
+    0b01100000,
+    0b11110000,
+//3
+    0b11100000,
+    0b00010000,
+    0b01100000,
+    0b00010000,
+    0b11100000,
+
+    0b10100000,
+    0b10100000,
+    0b11100000,
+    0b00100000,
+    0b00100000,
+
+    0b11110000,
+    0b10000000,
+    0b11110000,
+    0b00010000,
+    0b11110000,
+
+    0b10000000,
+    0b10000000,
+    0b11110000,
+    0b10010000,
+    0b11110000,
+
+    0b11110000,
+    0b00010000,
+    0b00100000,
+    0b00100000,
+    0b00100000,
+
+    0b11110000,
+    0b10010000,
+    0b11110000,
+    0b10010000,
+    0b11110000,
+
+    0b11110000,
+    0b10010000,
+    0b11110000,
+    0b00010000,
+    0b00010000,
+
+    0b01100000,
+    0b10010000,
+    0b11110000,
+    0b10010000,
+    0b10010000,
+
+    0b10000000,
+    0b10000000,
+    0b11110000,
+    0b10010000,
+    0b11110000,
+
+    0b11110000,
+    0b10000000,
+    0b10000000,
+    0b10000000,
+    0b11110000,
+
+    0b11100000,
+    0b10010000,
+    0b10010000,
+    0b10010000,
+    0b11100000,
+
+    0b11110000,
+    0b10000000,
+    0b11100000,
+    0b10000000,
+    0b11110000,
+
+    0b11110000,
+    0b10000000,
+    0b11100000,
+    0b10000000,
+    0b10000000,
+};
 Chip8State* init() {
     srand(time(NULL));
     Chip8State* state = calloc(sizeof(Chip8State), 1);
@@ -29,11 +115,13 @@ Chip8State* init() {
     //1024*4 for 4k
     state->memory = calloc(1024*4, 1);
     state->screen = &state->memory[0xF00];
+    
     state->SP = 0xFA0;
     state->PC = 0x200;
 
     //Put font into low memory
     memcpy(&state->memory[FONT_BASE], font4x5, FONT_SIZE);
+    initScreen();
 
     return state;
 }
@@ -41,11 +129,21 @@ Chip8State* init() {
 void emulate(Chip8State* state) {
     uint8_t* opcode = &state->memory[state->PC];
     int first_nibble = (opcode[0] & 0xF0) >> 4;
-    printf("%d\n", first_nibble);
-    printf("%d\n", *opcode >> 4);
+    // printf("%d\n", first_nibble);
+    // printf("%d\n", *opcode >> 4);
+    if (state->draw_flag) {
+        drawScreen(state);
+        } else {
     switch(first_nibble)
     {
-        case 0x00: uninplementedInstruction(state); break;
+        case 0x00:
+        {
+            printf("Clearing screen");
+            clearScreen(state);
+            
+            incrementPC(state);
+        }
+        break;
         case 0x01:
         {
             //JMP NNN
@@ -152,7 +250,7 @@ void emulate(Chip8State* state) {
                     if(state->V[first_reg] + state->V[second_reg] > 255) {
                         state->V[0xF] = 1;
                     } else {
-                        state->[0xF] = 0;
+                        state->V[0xF] = 0;
                     }
                     state->V[first_reg] += state->V[second_reg];
                     incrementPC(state);
@@ -164,7 +262,7 @@ void emulate(Chip8State* state) {
                     uint8_t first_reg = getRegister(opcode[0], false);
                     uint8_t second_reg = getRegister(opcode[1], true);
                     //Check if VF needs to be set (borrow)
-                    if (state->V[first_reg] > state->[second_reg]) {
+                    if (state->V[first_reg] > state->V[second_reg]) {
                         state->V[0xF] = 1;
                     } else {
                         state->V[0xF] = 0;
@@ -189,7 +287,7 @@ void emulate(Chip8State* state) {
                     uint8_t first_reg = getRegister(opcode[0], false);
                     uint8_t second_reg = getRegister(opcode[1], true);
                     //Check if VF needs to be set (borrow)
-                    if (state->V[first_reg] < state->[second_reg]) {
+                    if (state->V[first_reg] < state->V[second_reg]) {
                         state->V[0xF] = 1;
                     } else {
                         state->V[0xF] = 0;
@@ -203,7 +301,7 @@ void emulate(Chip8State* state) {
                     //ROL Vx
                     uint8_t reg = getRegister(opcode[0], false);
                     //Set VF to MSB BEFORE shift
-                    state->V[0xF] = (state->V[reg] >> 8) & 0x80;
+                    state->V[0xF] = (0x80 == (state->V[reg] & 0x80));
                     state->V[reg] = state->V[reg] << 1;
                     incrementPC(state);
                 }
@@ -227,7 +325,7 @@ void emulate(Chip8State* state) {
         case 0x0A:
         {
             //MVI I NNN
-            uint8_t address = getAddress(opcode[0], opcode[1]);
+            uint16_t address = getAddress(opcode[0], opcode[1]);
             state->I = address;
             incrementPC(state);
         }
@@ -235,7 +333,7 @@ void emulate(Chip8State* state) {
         case 0x0B:
         {
             //JMP NNN + V0
-            uint8_t address = getAddress(opcode[0], opcode[1]);
+            uint16_t address = getAddress(opcode[0], opcode[1]);
             address += state->V[0];
             state->PC = address;
         }
@@ -257,6 +355,8 @@ void emulate(Chip8State* state) {
             int x = state->V[opcode[0] & 0xF];
             int y = state->V[(opcode[1] & 0xF0) >> 4];
 
+            state->draw_flag = true;
+            printf("drawflag set\n");
             state->V[0xF] = 0;
             for (int i = 0; i < lines; i++) {
                 uint8_t *sprite = &state->memory[state->I+i];
@@ -288,6 +388,7 @@ void emulate(Chip8State* state) {
                     spritebit--;
                 }
             }
+            drawScreen(state);
             incrementPC(state);
         }
         break;
@@ -381,6 +482,7 @@ void emulate(Chip8State* state) {
                 break;
                 case 0x29:
                 {
+                    //SPRITECHAR I Vx
                     uint8_t reg = getRegister(opcode[0], false);
                     state->I = FONT_BASE + (state->V[reg] * 5);
                 }
@@ -405,9 +507,9 @@ void emulate(Chip8State* state) {
                 {
                     //MOVM (I) V0->Vx
                     uint8_t reg = getRegister(opcode[0], false);
-                    uint16_t* address = state->I;
-                    for (uint8_t current_reg = 0; current_reg <= reg; current_reg) {
-                        state->memory[address[current_reg]] = state->V[current_reg];
+                    uint16_t address = state->I;
+                    for (uint8_t current_reg = 0; current_reg <= reg; current_reg++) {
+                        state->memory[address + current_reg] = state->V[current_reg];
                     }
                     incrementPC(state);
                 }
@@ -416,10 +518,9 @@ void emulate(Chip8State* state) {
                 {
                     //MOVM V0->Vx (I)
                     uint8_t reg = getRegister(opcode[0], false);
-                    uint16_t* address = state->I;
-                    for (uint8_t current_reg = 0; current_reg <= reg; current_reg) {
-                        state->memory[address[current_reg]] = state->V[current_reg];
-                        state->V[current_reg] = state->memory[address[current_reg]];
+                    uint16_t address = state->I;
+                    for (uint8_t current_reg = 0; current_reg <= reg; current_reg++) {
+                        state->V[current_reg] = state->memory[address + current_reg];
                     }
                     incrementPC(state);
                 }
@@ -429,15 +530,108 @@ void emulate(Chip8State* state) {
         }
         break;
     }
+    }
 }
 
 void uninplementedInstruction(Chip8State* state) {
 
 }
 
-int main(int argc, char* args[]) {
+int main(int argc, char* argv[]) {
     Chip8State* state = init();
-    //emulate(state);
+    FILE *f = fopen(argv[1], "rb");
+    if (f==NULL) {
+        printf("Error: Couldn't open %s\n", argv[1]);
+        exit(1);
+    }
+
+    //Get file size
+    fseek(f, 0L, SEEK_END);
+    int file_size = ftell(f);
+    fseek(f, 0L, SEEK_SET);
+
+    //CHIP-8 puts programs in memory at 0x200
+    //Read the file int/o memory at 0x200 and close it
+    unsigned char* buffer = malloc(file_size+0x200);
+
+    fread(buffer+0x200, file_size, 1, f);
+    // fread(&state->memory[state->PC], file_size, 1, f);
+    fclose(f);
+
+    // drawScreen(state);
+    memcpy(&state->memory[state->PC], buffer + 0x200, file_size);
+    while (state->PC < (file_size+0x200)) {
+        disassemble(buffer, state->PC);
+        emulate(state);
+        //Each instruction is two bytes long
+        printf("\n");
+    }
+
+    free(buffer);
+
+    // emulate(state);
+    
+
+    /*
+     * WHITE
+     * BOARD
+     * THIS
+     * SHIT
+     * !!!
+     */
+            //Draw sprite at (vx, vy)
+            //SPRITE
+            // int lines = 5;
+            // int x = 0;
+            // int y = 0;
+
+            // state->draw_flag = true;
+            // printf("drawflag set\n");
+            // state->V[0xF] = 0;
+            // for (int i = 0; i < lines; i++) {
+            //     uint8_t *sprite = &state->memory[state->I+i];
+            //     int spritebit=7;
+            //     for (int j=x; j<(x+8) && j<64; j++) {
+            //         int jover8 = j / 8; //Picks the byte in the row
+            //         int jmod8 = j % 8; //Picks the bit in the byte
+            //         uint8_t srcbit = (*sprite >> spritebit) & 0x1;
+
+            //         if (srcbit) {
+            //             uint8_t *destbyte_p = &state->screen[(i+y) * (64/8) + jover8];
+            //             uint8_t destbyte = *destbyte_p;
+            //             uint8_t destmask = (0x80 >> jmod8);
+            //             uint8_t destbit = destbyte & destmask;
+
+            //             srcbit = srcbit << (7-jmod8);
+
+            //             if (srcbit & destbit) {
+            //                 state->V[0xF] = 1;
+
+            //             }
+
+            //             destbit ^= srcbit;
+
+            //             destbyte = (destbyte & ~destmask) | destbit;
+
+            //             *destbyte_p = destbyte;
+            //         }
+            //         spritebit--;
+            //     }
+            // }
+            
+    // state->screen[0] = 0b1111;
+    // state->screen[1] = 255;
+    // state->screen[155]= 255;
+    // state->screen[32] = 255;
+    // state->screen[255] = 255;
+    // state->screen[64] = 1;
+    // state->screen[63] = 1;
+
+
+
+    state->draw_flag = true;
+    drawScreen(state);
+    return 0;
 }
 
 void incrementPC(Chip8State* state) {
@@ -457,104 +651,3 @@ uint8_t getRegister(uint8_t byte, bool first_nibble) {
     else
         return byte & 0x0F;
 }
-
-uint8_t font4x5[] = {
-//0
-    0b01100000,
-    0b10010000,
-    0b10010000,
-    0b10010000,
-    0b01100000,
-
-//1
-    0b01100000,
-    0b00100000,
-    0b00100000,
-    0b00100000,
-    0b01110000,
-
-//2
-    0b11100000,
-    0b00010000,
-    0b00110000,
-    0b01100000,
-    0b11110000,
-//3
-    0b11100000,
-    0b00010000,
-    0b01100000,
-    0b00010000,
-    0b11100000,
-
-    0b10100000,
-    0b10100000,
-    0b11100000,
-    0b00100000,
-    0b00100000,
-
-    0b11110000,
-    0b10000000,
-    0b11110000,
-    0b00010000,
-    0b11110000,
-
-    0b10000000,
-    0b10000000,
-    0b11110000,
-    0b10010000,
-    0b11110000,
-
-    0b11110000,
-    0b00010000,
-    0b00100000,
-    0b00100000,
-    0b00100000,
-
-    0b11110000,
-    0b10010000,
-    0b11110000,
-    0b10010000,
-    0b11110000,
-
-    0b11110000,
-    0b10010000,
-    0b11110000,
-    0b00010000,
-    0b00010000,
-
-    0b01100000,
-    0b10010000,
-    0b11110000,
-    0b10010000,
-    0b10010000,
-
-    0b10000000,
-    0b10000000,
-    0b11110000,
-    0b10010000,
-    0b11110000,
-
-    0b11110000,
-    0b10000000,
-    0b10000000,
-    0b10000000,
-    0b11110000,
-
-    0b11100000,
-    0b10010000,
-    0b10010000,
-    0b10010000,
-    0b11100000,
-
-    0b11110000,
-    0b10000000,
-    0b11100000,
-    0b10000000,
-    0b11110000,
-
-    0b11110000,
-    0b10000000,
-    0b11100000,
-    0b10000000,
-    0b10000000,
-};

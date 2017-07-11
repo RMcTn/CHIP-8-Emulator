@@ -294,33 +294,33 @@ void disassemble(uint8_t *codebuffer, int pc) {
     }
 }
 
-int main(int argc, char**argv) {
-    FILE *f = fopen(argv[1], "rb");
-    if (f==NULL) {
-        printf("Error: Couldn't open %s\n", argv[1]);
-        exit(1);
-    }
+// int main(int argc, char**argv) {
+//     FILE *f = fopen(argv[1], "rb");
+//     if (f==NULL) {
+//         printf("Error: Couldn't open %s\n", argv[1]);
+//         exit(1);
+//     }
 
-    //Get file size
-    fseek(f, 0L, SEEK_END);
-    int file_size = ftell(f);
-    fseek(f, 0L, SEEK_SET);
+//     //Get file size
+//     fseek(f, 0L, SEEK_END);
+//     int file_size = ftell(f);
+//     fseek(f, 0L, SEEK_SET);
 
-    //CHIP-8 puts programs in memory at 0x200
-    //Read the file into memory at 0x200 and close it
-    unsigned char* buffer = malloc(file_size+0x200);
+//     //CHIP-8 puts programs in memory at 0x200
+//     //Read the file into memory at 0x200 and close it
+//     unsigned char* buffer = malloc(file_size+0x200);
 
-    fread(buffer+0x200, file_size, 1, f);
-    fclose(f);
+//     fread(buffer+0x200, file_size, 1, f);
+//     fclose(f);
 
-    int pc = 0x200;
-    while (pc < (file_size+0x200)) {
-        disassemble(buffer, pc);
-        //Each instruction is two bytes long
-        pc += 2;
-        printf("\n");
-    }
+//     int pc = 0x200;
+//     while (pc < (file_size+0x200)) {
+//         disassemble(buffer, pc);
+//         //Each instruction is two bytes long
+//         pc += 2;
+//         printf("\n");
+//     }
 
-    free(buffer);
-    return 0;
-}
+//     free(buffer);
+//     return 0;
+// }
