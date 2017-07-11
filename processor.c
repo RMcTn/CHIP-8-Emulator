@@ -4,6 +4,8 @@
 
 void uninplementedInstruction(Chip8State* state);
 void incrementPC(Chip8State* state);
+void printRegisters(Chip8State* state);
+void printMemory(Chip8State* state, int num);
 uint16_t getAddress(uint8_t first_byte, uint8_t second_byte);
 uint8_t getRegister(uint8_t byte, bool first_nibble);
 
@@ -247,7 +249,7 @@ void emulate(Chip8State* state) {
                     uint8_t first_reg = getRegister(opcode[0], false);
                     uint8_t second_reg = getRegister(opcode[1], true);
                     //Check if VF needs to be set (carry)
-                    if(state->V[first_reg] + state->V[second_reg] > 255) {
+                    if((state->V[first_reg] + state->V[second_reg]) > 255) {
                         state->V[0xF] = 1;
                     } else {
                         state->V[0xF] = 0;
@@ -563,6 +565,7 @@ int main(int argc, char* argv[]) {
     while (state->PC < (file_size+0x200)) {
         disassemble(buffer, state->PC);
         emulate(state);
+        printRegisters(state);
         //Each instruction is two bytes long
         printf("\n");
     }
@@ -647,7 +650,24 @@ uint16_t getAddress(uint8_t first_byte, uint8_t second_byte) {
 
 uint8_t getRegister(uint8_t byte, bool first_nibble) {
     if (first_nibble)
-        return byte & 0xF0;
+        return (byte & 0xF0) >> 4;
     else
         return byte & 0x0F;
+}
+
+void printRegisters(Chip8State* state) {
+    printf("\n");
+    for (int i = 0; i <= 0xF; i++) {
+        printf("Register V[%x] = %x\n", i, state->V[i]);
+    }
+    printf("Register I: %x\n", state->I);
+    printf("Register PC: %x\n", state->PC);
+}
+
+void printMemory(Chip8State* state, int num) {
+    printf("\nMemory: ");
+    for (int i = 0; i <= num; i++) {
+        printf("%x ", state->memory[state->I + i]);
+    }
+    printf("\n");
 }
