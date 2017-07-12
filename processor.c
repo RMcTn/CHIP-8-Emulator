@@ -140,9 +140,24 @@ void emulate(Chip8State* state) {
     {
         case 0x00:
         {
-            printf("Clearing screen");
-            clearScreen(state);
-            
+            switch ((opcode[1])) {
+                case 0xE0:
+                {
+                    //CLS
+                    printf("\nClearing screen");
+                    clearScreen(state);
+                }
+                break;
+                case 0xEE:
+                {
+                    //RET
+                    //Get program counter from stack, then decrement stack
+                    state->PC = state->memory[state->SP];
+                    state->SP--;
+                    
+                }
+                break;
+            }
             incrementPC(state);
         }
         break;
@@ -153,7 +168,17 @@ void emulate(Chip8State* state) {
             state->PC = target;
         }
         break;
-        case 0x02: uninplementedInstruction(state); break;
+        case 0x02:
+        {
+            //CALL NNN
+            //Increment stack pointer, store program counter there
+            //then set program counter to NNN
+            state->SP++;
+            state->memory[state->SP] = state->PC;
+            uint16_t address = getAddress(opcode[0], opcode[1]);
+            state->PC = address;
+            incrementPC(state);
+        }
         case 0x03:
         {
             //SKIP.EQ Vx NN
