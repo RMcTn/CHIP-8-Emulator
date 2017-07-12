@@ -152,7 +152,7 @@ void emulate(Chip8State* state) {
                 {
                     //RET
                     //Get program counter from stack, then decrement stack
-                    state->PC = state->memory[state->SP];
+                    state->PC = ((state->memory[state->SP - 1] & 0xF0) << 4) | state->memory[state->SP];
                     state->SP--;
                     
                 }
