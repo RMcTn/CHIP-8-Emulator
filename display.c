@@ -19,17 +19,17 @@ void drawScreen(Chip8State* state)
         //check whiteboard for possible algorithm
         for (int i = 0; i < SCREEN_SIZE / 8; i++)
         {
-            int x = i % SCREEN_WIDTH;
-            int y = i / SCREEN_WIDTH;
-            printf("X: %d\nY: %d\nI: %d\n", x, y, i);
+            // int x = i % SCREEN_WIDTH;
+            // int y = i / SCREEN_WIDTH;
+            // printf("X: %d\nY: %d\nI: %d\n", x, y, i);
             uint8_t temp_byte = state->screen[i];
-            for (int j = 0; j < 8; j++)
+            for (int byte = 0; byte < 8; byte++)
             {
-                unsigned int offset; 
-                // unsigned int offset = (SCREEN_WIDTH * y * 4) + (x * 4) + (j* 4);
-                offset = i * 32 + (j * 4);
+                unsigned int offset = i * 32 + (byte * 4);
 
-                printf("Offset: %d\n", offset);
+                // printf("Offset: %d\n", offset);
+                //And the current byte to get the msb
+                //this shows if a pixel should be white or not
                 if (temp_byte & 0x80)
                 {
                     //Turn pixel white (on)
@@ -46,20 +46,6 @@ void drawScreen(Chip8State* state)
                 }
                 temp_byte = temp_byte << 1;
             }
-            // if (state->screen[i] == 0)
-            // {
-            //     pixels[offset + 0] = 0;
-            //     pixels[offset + 1] = 0;
-            //     pixels[offset + 2] = 0;
-            //     pixels[offset + 3] = SDL_ALPHA_OPAQUE;
-            // }
-            // else
-            // {
-            //     pixels[offset + 0] = 255;
-            //     pixels[offset + 1] = 255;
-            //     pixels[offset + 2] = 255;
-            //     pixels[offset + 3] = SDL_ALPHA_OPAQUE;
-            // }
         }
         SDL_UpdateTexture(texture, NULL, &pixels[0], SCREEN_WIDTH * 4);
 
