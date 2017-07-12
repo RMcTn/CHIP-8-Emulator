@@ -560,78 +560,17 @@ int main(int argc, char* argv[]) {
     // fread(&state->memory[state->PC], file_size, 1, f);
     fclose(f);
 
-    // drawScreen(state);
     memcpy(&state->memory[state->PC], buffer + 0x200, file_size);
     while (state->PC < (file_size+0x200)) {
         disassemble(buffer, state->PC);
         emulate(state);
-        printRegisters(state);
+        // printRegisters(state);
         //Each instruction is two bytes long
         printf("\n");
     }
 
     free(buffer);
-
-    // emulate(state);
     
-
-    /*
-     * WHITE
-     * BOARD
-     * THIS
-     * SHIT
-     * !!!
-     */
-            //Draw sprite at (vx, vy)
-            //SPRITE
-            // int lines = 5;
-            // int x = 0;
-            // int y = 0;
-
-            // state->draw_flag = true;
-            // printf("drawflag set\n");
-            // state->V[0xF] = 0;
-            // for (int i = 0; i < lines; i++) {
-            //     uint8_t *sprite = &state->memory[state->I+i];
-            //     int spritebit=7;
-            //     for (int j=x; j<(x+8) && j<64; j++) {
-            //         int jover8 = j / 8; //Picks the byte in the row
-            //         int jmod8 = j % 8; //Picks the bit in the byte
-            //         uint8_t srcbit = (*sprite >> spritebit) & 0x1;
-
-            //         if (srcbit) {
-            //             uint8_t *destbyte_p = &state->screen[(i+y) * (64/8) + jover8];
-            //             uint8_t destbyte = *destbyte_p;
-            //             uint8_t destmask = (0x80 >> jmod8);
-            //             uint8_t destbit = destbyte & destmask;
-
-            //             srcbit = srcbit << (7-jmod8);
-
-            //             if (srcbit & destbit) {
-            //                 state->V[0xF] = 1;
-
-            //             }
-
-            //             destbit ^= srcbit;
-
-            //             destbyte = (destbyte & ~destmask) | destbit;
-
-            //             *destbyte_p = destbyte;
-            //         }
-            //         spritebit--;
-            //     }
-            // }
-            
-    // state->screen[0] = 0b1111;
-    // state->screen[1] = 255;
-    // state->screen[155]= 255;
-    // state->screen[32] = 255;
-    // state->screen[255] = 255;
-    // state->screen[64] = 1;
-    // state->screen[63] = 1;
-
-
-
     state->draw_flag = true;
     drawScreen(state);
     return 0;
